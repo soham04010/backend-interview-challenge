@@ -1,98 +1,77 @@
-# Backend Interview Challenge - Task Sync API
+Task Sync API Challenge Solution
 
-This is a backend developer interview challenge focused on building a sync-enabled task management API. The challenge evaluates understanding of REST APIs, data synchronization, offline-first architecture, and conflict resolution.
+Candidate: Soham Chaudhary
+Project Goal: Implement a backend API supporting offline-first task management, synchronization, and conflict resolution using the Last-Write-Wins (LWW) strategy.
 
-## 📚 Documentation Overview
+1. Project Overview and Architecture
 
-Please read these documents in order:
+The solution is implemented using Node.js, Express, and TypeScript. The architecture separates concerns into distinct layers:
 
-1. **[📋 Submission Instructions](./docs/SUBMISSION_INSTRUCTIONS.md)** - How to submit your solution (MUST READ)
-2. **[📝 Requirements](./docs/REQUIREMENTS.md)** - Detailed challenge requirements and implementation tasks
-3. **[🔌 API Specification](./docs/API_SPEC.md)** - Complete API documentation with examples
-4. **[🤖 AI Usage Guidelines](./docs/AI_GUIDELINES.md)** - Guidelines for using AI tools during the challenge
+Layer
 
-**⚠️ Important**: DO NOT create pull requests against this repository. All submissions must be through private forks.
+Responsibility
 
-## Challenge Overview
+Key Implementation Detail
 
-Candidates are expected to implement a backend API that:
-- Manages tasks (CRUD operations)
-- Supports offline functionality with a sync queue
-- Handles conflict resolution when syncing
-- Provides robust error handling
+Routes
 
-## Project Structure
+Handles HTTP requests and responses (e.g., status codes, body validation).
 
-```
-backend-interview-challenge/
-├── src/
-│   ├── db/             # Database setup and configuration
-│   ├── models/         # Data models (if needed)
-│   ├── services/       # Business logic (TO BE IMPLEMENTED)
-│   ├── routes/         # API endpoints (TO BE IMPLEMENTED)
-│   ├── middleware/     # Express middleware
-│   ├── types/          # TypeScript interfaces
-│   └── server.ts       # Express server setup
-├── tests/              # Test files
-├── docs/               # Documentation
-└── package.json        # Dependencies and scripts
-```
+src/routes/tasks.ts, src/routes/sync.ts
 
-## Getting Started
+Services
 
-### Prerequisites
-- Node.js (v18 or higher)
-- npm or yarn
+Contains all business logic (CRUD, sync orchestration, conflict resolution).
 
-### Setup
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Copy environment variables:
-   ```bash
-   cp .env.example .env
-   ```
-4. Run the development server:
-   ```bash
-   npm run dev
-   ```
+src/services/taskService.ts, src/services/syncService.ts
 
-### Available Scripts
+Database
 
-- `npm run dev` - Start development server with hot reload
-- `npm run build` - Build TypeScript to JavaScript
-- `npm run start` - Start production server
-- `npm test` - Run tests
-- `npm run test:ui` - Run tests with UI
-- `npm run lint` - Run ESLint
-- `npm run typecheck` - Check TypeScript types
+Handles all persistence and data queries.
 
-## Your Task
+src/db/database.ts (Uses SQLite)
 
-### Key Implementation Files
+Synchronization Strategy: Last-Write-Wins (LWW)
 
-You'll need to implement the following services and routes:
+Mechanism: Conflict resolution is strictly based on the updated_at timestamp associated with each task.
 
-- `src/services/taskService.ts` - Task CRUD operations
-- `src/services/syncService.ts` - Sync logic and conflict resolution  
-- `src/routes/tasks.ts` - REST API endpoints
-- `src/routes/sync.ts` - Sync-related endpoints
+Logic: When the server receives a change via POST /sync/batch, it compares the incoming client timestamp with the server's current version. The change with the later timestamp always prevails.
 
-### Before Submission
+Offline Support: All CRUD operations performed by a client trigger an update to the task's updated_at timestamp and queue the operation for eventual sync.
 
-Ensure all of these pass:
-```bash
-npm test          # All tests must pass
-npm run lint      # No linting errors
-npm run typecheck # No TypeScript errors
-```
+2. Technical Assumptions and Trade-offs
 
-### Time Expectation
+A. Database Choice and Deployment Constraint
 
-This challenge is designed to take 2-3 hours to complete.
+Assumption/Challenge
 
-## License
+Resolution
 
-This project is for interview purposes only.
+SQLite Persistence
+
+The requirement specified SQLite, but deployment on Vercel/Serverless platforms often restricts local file system writing.
+
+Sync Queue (Client-Side)
+
+The requirements detail client-side sync queue management.
+
+B. Conflict Resolution and Deletion
+
+Soft Deletes: All DELETE operations are implemented as a soft delete (is_deleted: true). This is mandatory for a sync system, as the server must know that a deletion occurred and communicate that change to other devices.
+
+Batch Size: The documentation requested batch size optimization. For simplicity, the service is designed to process the entire batch sent by the client in a single call, optimizing for minimum latency per request.
+
+3. How to Run and Test the Solution
+
+A. Local Development
+
+Clone the repository and run npm install.
+
+Start the server (backend only): npm run dev
+
+The API will run locally at http://localhost:3000/api.
+
+B. Deployed Endpoint
+
+The live API endpoint is hosted on Vercel:
+https://backend-interview-challenge-theta.vercel.app/api/sync/health and https://backend-interview-challenge-theta.vercel.app/api/tasks
