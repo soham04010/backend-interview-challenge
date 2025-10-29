@@ -20,7 +20,7 @@ const db = new Database(process.env.DATABASE_URL || './data/tasks.sqlite3');
 
 // Routes
 app.use('/api/tasks', createTaskRouter(db));
-app.use('/api', createSyncRouter(db));
+app.use('/api/sync', createSyncRouter(db));
 
 // Error handling
 app.use(errorHandler);
